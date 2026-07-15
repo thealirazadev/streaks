@@ -1,0 +1,79 @@
+# Dart and Flutter dependency state
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Build outputs
+build/
+coverage/
+**/doc/api/
+android/.gradle/
+android/.cxx/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/.symlinks/
+ios/Pods/
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/Generated.xcconfig
+macos/Flutter/flutter_export_environment.sh
+macos/.symlinks/
+macos/Pods/
+
+# Local SDK managers
+.fvm/
+.flutter_sdk/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+.secrets/
+secrets.*
+*.key
+*.keystore
+*.jks
+*.pem
+*.cer
+*.crt
+*.der
+*.p8
+*.p12
+*.pfx
+*.mobileprovision
+key.properties
+keystore.properties
+google-services.json
+GoogleService-Info.plist
+
+# IDE and operating-system files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Apple local state and build artifacts
+**/DerivedData/
+**/*.dSYM/
+**/*.dSYM.zip
+**/*.symbols
+**/*.xcuserstate
+**/xcuserdata/
+.swiftpm/
+ios/Flutter/.last_build_id
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
