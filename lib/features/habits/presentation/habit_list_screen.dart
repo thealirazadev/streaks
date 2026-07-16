@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:streaks/app/theme/app_spacing.dart';
 import 'package:streaks/features/habits/application/habit_list_provider.dart';
+import 'package:streaks/features/habits/domain/habit.dart';
+import 'package:streaks/features/habits/presentation/habit_detail_screen.dart';
 import 'package:streaks/features/habits/presentation/habit_form_screen.dart';
 import 'package:streaks/features/habits/presentation/habit_list_tile.dart';
 import 'package:streaks/features/habits/presentation/widgets/empty_habits_view.dart';
@@ -25,7 +27,10 @@ class HabitListScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.space16),
             itemCount: habits.length,
             separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.space8),
-            itemBuilder: (context, index) => HabitListTile(habit: habits[index]),
+            itemBuilder: (context, index) => HabitListTile(
+              habit: habits[index],
+              onTap: () => _openDetail(context, habits[index]),
+            ),
           );
         },
         loading: () => const _HabitListLoading(),
@@ -45,6 +50,14 @@ class HabitListScreen extends ConsumerWidget {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const HabitFormScreen()));
+  }
+
+  void _openDetail(BuildContext context, Habit habit) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HabitDetailScreen(habit: habit),
+      ),
+    );
   }
 }
 
