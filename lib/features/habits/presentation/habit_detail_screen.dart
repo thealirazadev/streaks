@@ -2,20 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:streaks/app/theme/app_spacing.dart';
 import 'package:streaks/core/date_utils.dart' as date_utils;
+import 'package:streaks/data/repositories/habit_repository_provider.dart';
 import 'package:streaks/features/habits/domain/habit.dart';
 import 'package:streaks/features/streaks/application/streak_provider.dart';
 import 'package:streaks/features/streaks/presentation/heatmap_calendar.dart';
 
 /// Detail screen for a single habit: name, color, streaks, reminder
-/// settings placeholder, and (from a later commit) a calendar heatmap of
-/// completion history.
-class HabitDetailScreen extends ConsumerWidget {
+/// settings placeholder, and a calendar heatmap of completion history.
+/// Tapping a past (or today's) heatmap cell toggles that day.
+class HabitDetailScreen extends ConsumerStatefulWidget {
   const HabitDetailScreen({required this.habit, super.key});
 
   final Habit habit;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HabitDetailScreen> createState() => _HabitDetailScreenState();
+}
+
+class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
+  Future<void> _toggleDay(int dayKey) async {
+    final repository = ref.read(habitRepositoryProvider);
+    final result = await repository.toggleDay(widget.habit.id, dayKey);
+    if (!mounted) return;
+    result.when(
+      ok: (_) {},
+      error: (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(failure.message)),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final habit = widget.habit;
     final completedAsync = ref.watch(completedDayKeysProvider(habit.id));
     final theme = Theme.of(context);
 
@@ -70,6 +91,7 @@ class HabitDetailScreen extends ConsumerWidget {
                     scheduleMask: habit.scheduleMask,
                     habitColor: Color(habit.color),
                     todayKey: date_utils.todayKey(),
+                    onDayTap: _toggleDay,
                   ),
                 ],
               ),
