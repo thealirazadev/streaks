@@ -35,4 +35,21 @@ class HabitDao extends DatabaseAccessor<AppDatabase> with _$HabitDaoMixin {
       ),
     );
   }
+
+  /// Streams archived habits, oldest first.
+  Stream<List<Habit>> watchArchivedHabits() {
+    return (select(
+      habits,
+    )..where((t) => t.archived.equals(true))..orderBy([
+      (t) => OrderingTerm.asc(t.createdAt),
+    ])).watch();
+  }
+
+  /// Sets the archived flag for the habit with [id]. Entries are untouched;
+  /// archiving only hides a habit from the active list.
+  Future<void> setArchived(int id, bool archived) {
+    return (update(habits)..where((t) => t.id.equals(id))).write(
+      HabitsCompanion(archived: Value(archived)),
+    );
+  }
 }
