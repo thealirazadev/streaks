@@ -107,4 +107,44 @@ class HabitRepository {
       );
     }
   }
+
+  /// Permanently deletes the habit with [id] and its entries (cascade).
+  Future<Result<void>> deleteHabit(int id) async {
+    try {
+      await _habitDao.deleteHabit(id);
+      return const Result.ok(null);
+    } catch (error, stackTrace) {
+      _logger.error('Failed to delete habit', error, stackTrace);
+      return Result.error(
+        DbFailure('Could not delete. Please try again.', cause: error),
+      );
+    }
+  }
+
+  /// Recreates a deleted habit (as a new row, with a new id) and its
+  /// completed day keys, for an "Undo" action right after a delete.
+  Future<Result<void>> restoreHabit({
+    required String name,
+    required int color,
+    required Schedule schedule,
+    required Set<int> completedDayKeys,
+  }) async {
+    try {
+      final id = await _habitDao.insertHabit(
+        HabitsCompanion.insert(
+          name: name,
+          color: color,
+          scheduleMask: Value(schedule.mask),
+          createdAt: DateTime.now().toUtc(),
+        ),
+      );
+      await _habitEntryDao.insertEntries(id, completedDayKeys);
+      return const Result.ok(null);
+    } catch (error, stackTrace) {
+      _logger.error('Failed to restore habit', error, stackTrace);
+      return Result.error(
+        DbFailure('Could not restore. Please try again.', cause: error),
+      );
+    }
+  }
 }

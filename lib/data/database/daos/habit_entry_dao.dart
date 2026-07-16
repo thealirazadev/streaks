@@ -44,4 +44,19 @@ class HabitEntryDao extends DatabaseAccessor<AppDatabase>
       }
     });
   }
+
+  /// Bulk-inserts one row per day key for [habitId]. Used to restore a
+  /// habit's history when undoing a delete; the caller guarantees
+  /// [dayKeys] contains no duplicates for an existing habit.
+  Future<void> insertEntries(int habitId, Set<int> dayKeys) {
+    if (dayKeys.isEmpty) {
+      return Future.value();
+    }
+    return batch((batch) {
+      batch.insertAll(habitEntries, [
+        for (final date in dayKeys)
+          HabitEntriesCompanion.insert(habitId: habitId, date: date),
+      ]);
+    });
+  }
 }

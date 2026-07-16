@@ -52,4 +52,10 @@ class HabitDao extends DatabaseAccessor<AppDatabase> with _$HabitDaoMixin {
       HabitsCompanion(archived: Value(archived)),
     );
   }
+
+  /// Permanently deletes the habit with [id]. Its entries cascade-delete
+  /// via the foreign key defined on `HabitEntries`.
+  Future<void> deleteHabit(int id) {
+    return (delete(habits)..where((t) => t.id.equals(id))).go();
+  }
 }
