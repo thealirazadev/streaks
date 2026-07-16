@@ -5,9 +5,11 @@ import 'package:streaks/core/date_utils.dart' as date_utils;
 import 'package:streaks/data/repositories/habit_repository_provider.dart';
 import 'package:streaks/features/habits/domain/habit.dart';
 import 'package:streaks/features/streaks/application/streak_provider.dart';
+import 'package:streaks/features/streaks/domain/streak.dart';
+import 'package:streaks/features/streaks/presentation/streak_badge.dart';
 
-/// A single row in the habit list: a color bar, the habit name, and a
-/// toggle for today's completion. The streak badge is added next.
+/// A single row in the habit list: a color bar, the habit name, the
+/// current/longest streak, and a toggle for today's completion.
 class HabitListTile extends ConsumerWidget {
   const HabitListTile({required this.habit, this.onTap, super.key});
 
@@ -17,9 +19,14 @@ class HabitListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final completedAsync = ref.watch(completedDayKeysProvider(habit.id));
+    final streakAsync = ref.watch(streakProvider(habit));
     final isDoneToday = completedAsync.maybeWhen(
       data: (completed) => completed.contains(date_utils.todayKey()),
       orElse: () => false,
+    );
+    final streak = streakAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => StreakResult.zero,
     );
 
     return Card(
@@ -38,11 +45,19 @@ class HabitListTile extends ConsumerWidget {
                       horizontal: AppSpacing.space16,
                       vertical: AppSpacing.space12,
                     ),
-                    child: Text(
-                      habit.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          habit.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: AppSpacing.space4),
+                        StreakBadge(streak: streak),
+                      ],
                     ),
                   ),
                 ),
