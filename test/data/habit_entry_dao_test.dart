@@ -63,4 +63,20 @@ void main() {
 
     expect(completed, {20260715, 20260716});
   });
+
+  test('insertEntries bulk-inserts a set of day keys', () async {
+    await entryDao.insertEntries(habitId, {20260714, 20260715, 20260716});
+
+    final completed = await entryDao.watchCompletedDayKeys(habitId).first;
+
+    expect(completed, {20260714, 20260715, 20260716});
+  });
+
+  test('insertEntries does nothing for an empty set', () async {
+    await entryDao.insertEntries(habitId, {});
+
+    final completed = await entryDao.watchCompletedDayKeys(habitId).first;
+
+    expect(completed, isEmpty);
+  });
 }
