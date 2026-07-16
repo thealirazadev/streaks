@@ -23,6 +23,9 @@ class HabitRepository {
   /// Streams non-archived habits, oldest first.
   Stream<List<Habit>> watchActiveHabits() => _habitDao.watchActiveHabits();
 
+  /// Streams archived habits, oldest first.
+  Stream<List<Habit>> watchArchivedHabits() => _habitDao.watchArchivedHabits();
+
   /// Streams the set of completed day keys for [habitId].
   Stream<Set<int>> watchCompletedDayKeys(int habitId) =>
       _habitEntryDao.watchCompletedDayKeys(habitId);
@@ -85,6 +88,20 @@ class HabitRepository {
       return const Result.ok(null);
     } catch (error, stackTrace) {
       _logger.error('Failed to update habit', error, stackTrace);
+      return Result.error(
+        DbFailure('Could not save. Please try again.', cause: error),
+      );
+    }
+  }
+
+  /// Archives or unarchives the habit with [id]. Archiving hides it from
+  /// the active list; its entries are never touched.
+  Future<Result<void>> setArchived(int id, bool archived) async {
+    try {
+      await _habitDao.setArchived(id, archived);
+      return const Result.ok(null);
+    } catch (error, stackTrace) {
+      _logger.error('Failed to set archived flag', error, stackTrace);
       return Result.error(
         DbFailure('Could not save. Please try again.', cause: error),
       );

@@ -21,12 +21,28 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<HabitDetailScreen> createState() => _HabitDetailScreenState();
 }
 
+enum _DetailAction { archive }
+
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   void _openEditForm(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => HabitFormScreen(habit: widget.habit),
       ),
+    );
+  }
+
+  Future<void> _archive() async {
+    final repository = ref.read(habitRepositoryProvider);
+    final result = await repository.setArchived(widget.habit.id, true);
+    if (!mounted) return;
+    result.when(
+      ok: (_) => Navigator.of(context).pop(),
+      error: (failure) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      },
     );
   }
 
@@ -63,6 +79,20 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Edit habit',
             onPressed: () => _openEditForm(context),
+          ),
+          PopupMenuButton<_DetailAction>(
+            onSelected: (action) {
+              switch (action) {
+                case _DetailAction.archive:
+                  _archive();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _DetailAction.archive,
+                child: Text('Archive'),
+              ),
+            ],
           ),
         ],
       ),

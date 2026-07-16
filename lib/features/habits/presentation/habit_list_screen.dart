@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:streaks/app/theme/app_spacing.dart';
 import 'package:streaks/features/habits/application/habit_list_provider.dart';
 import 'package:streaks/features/habits/domain/habit.dart';
+import 'package:streaks/features/habits/presentation/archived_habits_screen.dart';
 import 'package:streaks/features/habits/presentation/habit_detail_screen.dart';
 import 'package:streaks/features/habits/presentation/habit_form_screen.dart';
 import 'package:streaks/features/habits/presentation/habit_list_tile.dart';
@@ -17,7 +18,20 @@ class HabitListScreen extends ConsumerWidget {
     final habitsAsync = ref.watch(habitListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('streaks')),
+      appBar: AppBar(
+        title: const Text('streaks'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.archive_outlined),
+            tooltip: 'Archived habits',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ArchivedHabitsScreen(),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: habitsAsync.when(
         data: (habits) {
           if (habits.isEmpty) {
