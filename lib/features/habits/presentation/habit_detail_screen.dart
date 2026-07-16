@@ -9,6 +9,8 @@ import 'package:streaks/features/streaks/application/streak_provider.dart';
 import 'package:streaks/features/streaks/domain/streak.dart';
 import 'package:streaks/features/streaks/presentation/heatmap_calendar.dart';
 
+enum _DetailAction { archive, delete }
+
 /// Detail screen for a single habit: name, color, streaks, reminder
 /// settings placeholder, and a calendar heatmap of completion history.
 /// Tapping a past (or today's) heatmap cell toggles that day.
@@ -20,8 +22,6 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<HabitDetailScreen> createState() => _HabitDetailScreenState();
 }
-
-enum _DetailAction { archive }
 
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   void _openEditForm(BuildContext context) {
@@ -38,6 +38,68 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     if (!mounted) return;
     result.when(
       ok: (_) => Navigator.of(context).pop(),
+      error: (failure) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      },
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final habit = widget.habit;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete habit?'),
+        content: Text(
+          'This permanently deletes "${habit.name}" and all of its history.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _delete(context);
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final habit = widget.habit;
+    final repository = ref.read(habitRepositoryProvider);
+    // Snapshot the history before deleting so "Undo" can recreate it.
+    final completed = await repository.watchCompletedDayKeys(habit.id).first;
+    final result = await repository.deleteHabit(habit.id);
+    if (!mounted) return;
+    result.when(
+      ok: (_) {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Deleted "${habit.name}"'),
+            action: SnackBarAction(
+              label: 'Undo',
+              // `repository` is a plain Dart object held by Riverpod, not
+              // tied to this (about-to-be-disposed) screen's lifecycle, so
+              // it is safe to use after the pop below.
+              onPressed: () => repository.restoreHabit(
+                name: habit.name,
+                color: habit.color,
+                schedule: Schedule(habit.scheduleMask),
+                completedDayKeys: completed,
+              ),
+            ),
+          ),
+        );
+        Navigator.of(context).pop();
+      },
       error: (failure) {
         ScaffoldMessenger.of(
           context,
@@ -85,12 +147,20 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
               switch (action) {
                 case _DetailAction.archive:
                   _archive();
+                  break;
+                case _DetailAction.delete:
+                  _confirmDelete(context);
+                  break;
               }
             },
             itemBuilder: (context) => const [
               PopupMenuItem(
                 value: _DetailAction.archive,
                 child: Text('Archive'),
+              ),
+              PopupMenuItem(
+                value: _DetailAction.delete,
+                child: Text('Delete'),
               ),
             ],
           ),
