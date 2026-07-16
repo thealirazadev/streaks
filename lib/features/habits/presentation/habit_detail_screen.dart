@@ -5,6 +5,7 @@ import 'package:streaks/core/date_utils.dart' as date_utils;
 import 'package:streaks/data/repositories/habit_repository_provider.dart';
 import 'package:streaks/features/habits/domain/habit.dart';
 import 'package:streaks/features/streaks/application/streak_provider.dart';
+import 'package:streaks/features/streaks/domain/streak.dart';
 import 'package:streaks/features/streaks/presentation/heatmap_calendar.dart';
 
 /// Detail screen for a single habit: name, color, streaks, reminder
@@ -38,6 +39,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   Widget build(BuildContext context) {
     final habit = widget.habit;
     final completedAsync = ref.watch(completedDayKeysProvider(habit.id));
+    final streakAsync = ref.watch(streakProvider(habit));
+    final streak = streakAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => StreakResult.zero,
+    );
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -63,6 +69,8 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: AppSpacing.space24),
+            _StreakStats(streak: streak),
             const SizedBox(height: AppSpacing.space24),
             Text('Reminders', style: theme.textTheme.titleMedium),
             const SizedBox(height: AppSpacing.space8),
@@ -104,6 +112,72 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Current and longest streak, shown large per `docs/design.md`
+/// (`displaySmall` for the headline number on habit detail).
+class _StreakStats extends StatelessWidget {
+  const _StreakStats({required this.streak});
+
+  final StreakResult streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label:
+          'Current streak ${streak.current} days. '
+          'Best streak ${streak.longest} days.',
+      excludeSemantics: true,
+      child: Row(
+        children: [
+          Expanded(
+            child: _StatColumn(
+              value: streak.current,
+              label: 'Current streak',
+              theme: theme,
+            ),
+          ),
+          Expanded(
+            child: _StatColumn(
+              value: streak.longest,
+              label: 'Best streak',
+              theme: theme,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatColumn extends StatelessWidget {
+  const _StatColumn({
+    required this.value,
+    required this.label,
+    required this.theme,
+  });
+
+  final int value;
+  final String label;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$value', style: theme.textTheme.displaySmall),
+        const SizedBox(height: AppSpacing.space4),
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        ),
+      ],
     );
   }
 }
