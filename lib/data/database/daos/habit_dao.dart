@@ -19,4 +19,20 @@ class HabitDao extends DatabaseAccessor<AppDatabase> with _$HabitDaoMixin {
   }
 
   Future<int> insertHabit(HabitsCompanion entry) => into(habits).insert(entry);
+
+  /// Updates the name, color, and schedule of the habit with [id].
+  Future<void> updateHabit({
+    required int id,
+    required String name,
+    required int color,
+    required int scheduleMask,
+  }) {
+    return (update(habits)..where((t) => t.id.equals(id))).write(
+      HabitsCompanion(
+        name: Value(name),
+        color: Value(color),
+        scheduleMask: Value(scheduleMask),
+      ),
+    );
+  }
 }

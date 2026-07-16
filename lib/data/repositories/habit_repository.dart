@@ -67,4 +67,27 @@ class HabitRepository {
       );
     }
   }
+
+  /// Updates an existing habit's name, color, and schedule.
+  Future<Result<void>> updateHabit({
+    required int id,
+    required String name,
+    required int color,
+    required Schedule schedule,
+  }) async {
+    try {
+      await _habitDao.updateHabit(
+        id: id,
+        name: name.trim(),
+        color: color,
+        scheduleMask: schedule.mask,
+      );
+      return const Result.ok(null);
+    } catch (error, stackTrace) {
+      _logger.error('Failed to update habit', error, stackTrace);
+      return Result.error(
+        DbFailure('Could not save. Please try again.', cause: error),
+      );
+    }
+  }
 }
