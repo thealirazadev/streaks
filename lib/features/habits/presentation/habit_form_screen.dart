@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:streaks/app/theme/app_spacing.dart';
 import 'package:streaks/features/habits/application/habit_form_controller.dart';
+import 'package:streaks/features/habits/domain/habit.dart';
 import 'package:streaks/features/habits/presentation/widgets/color_picker.dart';
 import 'package:streaks/features/habits/presentation/widgets/schedule_picker.dart';
 
-/// Create-habit form: name, color, and weekly schedule.
+/// Create- or edit-habit form: name, color, and weekly schedule. Pass
+/// [habit] to edit an existing habit in place; omit it to create a new one.
 class HabitFormScreen extends ConsumerStatefulWidget {
-  const HabitFormScreen({super.key});
+  const HabitFormScreen({this.habit, super.key});
+
+  final Habit? habit;
 
   @override
   ConsumerState<HabitFormScreen> createState() => _HabitFormScreenState();
@@ -19,7 +23,13 @@ class _HabitFormScreenState extends ConsumerState<HabitFormScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    final habit = widget.habit;
+    _nameController = TextEditingController(text: habit?.name ?? '');
+    if (habit != null) {
+      // Seed the controller before the first build so `canSubmit` and the
+      // displayed color/schedule reflect the existing habit immediately.
+      ref.read(habitFormControllerProvider.notifier).startEditing(habit);
+    }
   }
 
   @override
@@ -41,7 +51,7 @@ class _HabitFormScreenState extends ConsumerState<HabitFormScreen> {
     final controller = ref.read(habitFormControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New habit')),
+      appBar: AppBar(title: Text(state.isEditing ? 'Edit habit' : 'New habit')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.space16),
         child: Column(

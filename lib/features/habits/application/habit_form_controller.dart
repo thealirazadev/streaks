@@ -20,6 +20,7 @@ class HabitFormState {
     this.isSaving = false,
     this.submitError,
     this.saved = false,
+    this.editingHabitId,
   });
 
   final String name;
@@ -33,6 +34,11 @@ class HabitFormState {
   /// The screen watches this to pop itself.
   final bool saved;
 
+  /// Id of the habit being edited, or null when creating a new habit.
+  final int? editingHabitId;
+
+  bool get isEditing => editingHabitId != null;
+
   bool get canSubmit => !isSaving && validateHabitName(name) is HabitNameValid;
 
   HabitFormState copyWith({
@@ -43,6 +49,7 @@ class HabitFormState {
     bool? isSaving,
     Object? submitError = _unset,
     bool? saved,
+    int? editingHabitId,
   }) {
     return HabitFormState(
       name: name ?? this.name,
@@ -56,6 +63,7 @@ class HabitFormState {
           ? this.submitError
           : submitError as String?,
       saved: saved ?? this.saved,
+      editingHabitId: editingHabitId ?? this.editingHabitId,
     );
   }
 }
@@ -90,6 +98,18 @@ class HabitFormController extends Notifier<HabitFormState> {
     state = state.copyWith(schedule: state.schedule.toggle(weekday));
   }
 
+  /// Seeds the form with an existing habit's values so `submit` updates it
+  /// instead of creating a new one. Called once when the form opens in
+  /// edit mode.
+  void startEditing(Habit habit) {
+    state = state.copyWith(
+      name: habit.name,
+      color: habit.color,
+      schedule: Schedule(habit.scheduleMask),
+      editingHabitId: habit.id,
+    );
+  }
+
   /// Attempts to save the habit. Returns true on success.
   Future<bool> submit() async {
     final validation = validateHabitName(state.name);
@@ -100,11 +120,19 @@ class HabitFormController extends Notifier<HabitFormState> {
     final trimmed = (validation as HabitNameValid).trimmed;
     state = state.copyWith(isSaving: true, submitError: null);
     final repository = ref.read(habitRepositoryProvider);
-    final result = await repository.createHabit(
-      name: trimmed,
-      color: state.color,
-      schedule: state.schedule,
-    );
+    final editingHabitId = state.editingHabitId;
+    final result = editingHabitId == null
+        ? await repository.createHabit(
+            name: trimmed,
+            color: state.color,
+            schedule: state.schedule,
+          )
+        : await repository.updateHabit(
+            id: editingHabitId,
+            name: trimmed,
+            color: state.color,
+            schedule: state.schedule,
+          );
     return result.when(
       ok: (_) {
         state = state.copyWith(isSaving: false, saved: true);

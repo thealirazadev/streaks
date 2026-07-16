@@ -4,6 +4,7 @@ import 'package:streaks/app/theme/app_spacing.dart';
 import 'package:streaks/core/date_utils.dart' as date_utils;
 import 'package:streaks/data/repositories/habit_repository_provider.dart';
 import 'package:streaks/features/habits/domain/habit.dart';
+import 'package:streaks/features/habits/presentation/habit_form_screen.dart';
 import 'package:streaks/features/streaks/application/streak_provider.dart';
 import 'package:streaks/features/streaks/domain/streak.dart';
 import 'package:streaks/features/streaks/presentation/heatmap_calendar.dart';
@@ -21,6 +22,14 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
+  void _openEditForm(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => HabitFormScreen(habit: widget.habit),
+      ),
+    );
+  }
+
   Future<void> _toggleDay(int dayKey) async {
     final repository = ref.read(habitRepositoryProvider);
     final result = await repository.toggleDay(widget.habit.id, dayKey);
@@ -47,7 +56,16 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(habit.name)),
+      appBar: AppBar(
+        title: Text(habit.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit habit',
+            onPressed: () => _openEditForm(context),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.space16),
         child: Column(
