@@ -4,6 +4,7 @@ import 'package:streaks/core/logger.dart';
 import 'package:streaks/core/result.dart';
 import 'package:streaks/data/database/app_database.dart';
 import 'package:streaks/data/database/daos/habit_dao.dart';
+import 'package:streaks/data/database/daos/habit_entry_dao.dart';
 import 'package:streaks/features/habits/domain/habit.dart';
 
 /// Facade over the habit DAOs, returning domain models and streams.
@@ -12,13 +13,18 @@ import 'package:streaks/features/habits/domain/habit.dart';
 /// read streams are exposed directly and surface failures through Riverpod's
 /// `AsyncValue.error` at the provider layer.
 class HabitRepository {
-  HabitRepository(this._habitDao, this._logger);
+  HabitRepository(this._habitDao, this._habitEntryDao, this._logger);
 
   final HabitDao _habitDao;
+  final HabitEntryDao _habitEntryDao;
   final Logger _logger;
 
   /// Streams non-archived habits, oldest first.
   Stream<List<Habit>> watchActiveHabits() => _habitDao.watchActiveHabits();
+
+  /// Streams the set of completed day keys for [habitId].
+  Stream<Set<int>> watchCompletedDayKeys(int habitId) =>
+      _habitEntryDao.watchCompletedDayKeys(habitId);
 
   /// Creates a habit with the given [name], [color], and [schedule].
   Future<Result<int>> createHabit({
