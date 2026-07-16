@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:streaks/core/date_utils.dart' as date_utils;
 import 'package:streaks/core/failures.dart';
 import 'package:streaks/core/logger.dart';
 import 'package:streaks/core/result.dart';
@@ -25,6 +26,23 @@ class HabitRepository {
   /// Streams the set of completed day keys for [habitId].
   Stream<Set<int>> watchCompletedDayKeys(int habitId) =>
       _habitEntryDao.watchCompletedDayKeys(habitId);
+
+  /// Toggles completion for [habitId] on today's local date.
+  Future<Result<void>> toggleToday(int habitId) =>
+      toggleDay(habitId, date_utils.todayKey());
+
+  /// Toggles completion for [habitId] on the given day [key].
+  Future<Result<void>> toggleDay(int habitId, int key) async {
+    try {
+      await _habitEntryDao.toggle(habitId, key);
+      return const Result.ok(null);
+    } catch (error, stackTrace) {
+      _logger.error('Failed to toggle habit entry', error, stackTrace);
+      return Result.error(
+        DbFailure('Could not save. Please try again.', cause: error),
+      );
+    }
+  }
 
   /// Creates a habit with the given [name], [color], and [schedule].
   Future<Result<int>> createHabit({
