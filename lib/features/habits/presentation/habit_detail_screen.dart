@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:streaks/app/theme/app_spacing.dart';
+import 'package:streaks/core/date_utils.dart' as date_utils;
 import 'package:streaks/features/habits/domain/habit.dart';
 import 'package:streaks/features/streaks/application/streak_provider.dart';
+import 'package:streaks/features/streaks/presentation/heatmap_calendar.dart';
 
 /// Detail screen for a single habit: name, color, streaks, reminder
 /// settings placeholder, and (from a later commit) a calendar heatmap of
@@ -53,9 +55,24 @@ class HabitDetailScreen extends ConsumerWidget {
             Text('History', style: theme.textTheme.titleMedium),
             const SizedBox(height: AppSpacing.space12),
             completedAsync.when(
-              data: (completed) => completed.isEmpty
-                  ? const Text('No completions yet. Mark today done to begin.')
-                  : Text('${completed.length} day(s) completed so far.'),
+              data: (completed) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (completed.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: AppSpacing.space12),
+                      child: Text(
+                        'No completions yet. Mark today done to begin.',
+                      ),
+                    ),
+                  HeatmapCalendar(
+                    completedDayKeys: completed,
+                    scheduleMask: habit.scheduleMask,
+                    habitColor: Color(habit.color),
+                    todayKey: date_utils.todayKey(),
+                  ),
+                ],
+              ),
               loading: () => const SizedBox(
                 height: 96,
                 child: Center(child: CircularProgressIndicator()),
