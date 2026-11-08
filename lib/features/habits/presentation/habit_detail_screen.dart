@@ -67,7 +67,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !context.mounted) return;
     await _delete(context);
   }
 
