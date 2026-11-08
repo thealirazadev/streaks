@@ -83,9 +83,8 @@ class HabitFormController extends Notifier<HabitFormState> {
       // it once the user has typed something and cleared it, or on submit.
       nameError: switch (validation) {
         HabitNameValid() => null,
-        HabitNameInvalid() => state.nameError == null && value.isEmpty
-            ? null
-            : (validation as HabitNameInvalid).message,
+        HabitNameInvalid(:final message) =>
+          state.nameError == null && value.isEmpty ? null : message,
       },
     );
   }
