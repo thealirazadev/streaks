@@ -24,6 +24,11 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (Migrator m) async {
       await m.createAll();
     },
+    // SQLite ignores foreign keys unless enabled per connection; without this,
+    // deleting a habit would leave its entries behind instead of cascading.
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
   );
 }
 
