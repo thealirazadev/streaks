@@ -97,7 +97,7 @@ class _CompletionToggle extends ConsumerWidget {
         width: 48,
         height: 48,
         child: IconButton(
-          onPressed: () => _toggle(ref),
+          onPressed: () => _toggle(context, ref),
           icon: Icon(
             isDone ? Icons.check_circle : Icons.circle_outlined,
             color: isDone ? Color(habit.color) : theme.colorScheme.outline,
@@ -107,8 +107,16 @@ class _CompletionToggle extends ConsumerWidget {
     );
   }
 
-  Future<void> _toggle(WidgetRef ref) async {
+  Future<void> _toggle(BuildContext context, WidgetRef ref) async {
+    // Captured before the await so no BuildContext is used across the async gap.
+    final messenger = ScaffoldMessenger.of(context);
     final repository = ref.read(habitRepositoryProvider);
-    await repository.toggleToday(habit.id);
+    final result = await repository.toggleToday(habit.id);
+    result.when(
+      ok: (_) {},
+      error: (failure) {
+        messenger.showSnackBar(SnackBar(content: Text(failure.message)));
+      },
+    );
   }
 }
