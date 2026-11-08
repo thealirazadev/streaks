@@ -9,8 +9,6 @@ import 'package:streaks/features/habits/presentation/habit_detail_screen.dart';
 import 'package:streaks/features/streaks/presentation/heatmap_calendar.dart';
 
 void main() {
-  late AppDatabase database;
-
   Future<Habit> insertHabit(AppDatabase db) async {
     final id = await db
         .into(db.habits)
@@ -24,17 +22,22 @@ void main() {
     return (db.select(db.habits)..where((t) => t.id.equals(id))).getSingle();
   }
 
-  setUp(() {
-    database = AppDatabase(NativeDatabase.memory());
-  });
+  AppDatabase openDatabase() {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    return database;
+  }
 
-  tearDown(() async {
-    await database.close();
-  });
+  // Unmount so drift cancels its stream queries and their timers fire before the test ends.
+  Future<void> unmount(WidgetTester tester) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(Duration.zero);
+  }
 
   testWidgets('shows the empty history message and an empty heatmap', (
     tester,
   ) async {
+    final database = openDatabase();
     final habit = await insertHabit(database);
 
     await tester.pumpWidget(
@@ -51,11 +54,13 @@ void main() {
     );
     expect(find.byType(HeatmapCalendar), findsOneWidget);
     expect(find.text('0'), findsNWidgets(2)); // current and best streak
+    await unmount(tester);
   });
 
   testWidgets('tapping today\'s heatmap cell toggles completion', (
     tester,
   ) async {
+    final database = openDatabase();
     final habit = await insertHabit(database);
     final todayKey = date_utils.todayKey();
 
@@ -74,7 +79,7 @@ void main() {
       find.text('No completions yet. Mark today done to begin.'),
       findsNothing,
     );
-    expect(find.text('1'), findsOneWidget); // current streak is now 1
+    expect(find.text('1'), findsNWidgets(2)); // current and best streak are now 1
 
     // Tapping again removes the entry (idempotent toggle).
     await tester.tap(find.byKey(ValueKey('heatmap-cell-$todayKey')));
@@ -84,5 +89,6 @@ void main() {
       find.text('No completions yet. Mark today done to begin.'),
       findsOneWidget,
     );
+    await unmount(tester);
   });
 }
