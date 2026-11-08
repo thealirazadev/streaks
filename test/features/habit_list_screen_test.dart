@@ -7,6 +7,12 @@ import 'package:streaks/data/database/database_provider.dart';
 import 'package:streaks/features/habits/presentation/habit_list_screen.dart';
 
 void main() {
+  // Unmount so drift cancels its stream queries and their timers fire before the test ends.
+  Future<void> unmount(WidgetTester tester) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(Duration.zero);
+  }
+
   testWidgets('shows the empty state with no habits', (tester) async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -21,6 +27,7 @@ void main() {
 
     expect(find.text('No habits yet'), findsOneWidget);
     expect(find.text('Add habit'), findsOneWidget);
+    await unmount(tester);
   });
 
   testWidgets('shows a previously created habit', (tester) async {
@@ -46,5 +53,6 @@ void main() {
 
     expect(find.text('Read'), findsOneWidget);
     expect(find.text('No habits yet'), findsNothing);
+    await unmount(tester);
   });
 }
