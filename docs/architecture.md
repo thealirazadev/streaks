@@ -102,7 +102,7 @@ streaks stores relational data: habits and their many dated entries, queried by 
 - Typed queries and reactive streams that plug directly into Riverpod.
 - First-class, versioned schema migrations, which we need because the schema will evolve (for example, adding reminder fields or archiving).
 
-Hive is a fast key-value store but would push relational modeling, range queries, and migration handling into hand-written code. Given the query and migration needs, Drift is the better fit. This decision is recorded in `docs/memory.md`.
+Hive is a fast key-value store but would push relational modeling, range queries, and migration handling into hand-written code. Given the query and migration needs, Drift is the better fit. See `docs/decisions.md`.
 
 ## Data model
 
@@ -132,7 +132,7 @@ Constraints:
 
 - Unique index on (`habit_id`, `date`) so a day is recorded at most once per habit.
 - Index on `habit_id` and on `date` for range queries.
-- Toggling "done" is implemented as insert-or-delete of the row for that (`habit_id`, `date`); an absent row means not done. The `done` column exists to allow an explicit not-done marker in future without a migration, but Phase 1 treats absence as not-done.
+- Toggling "done" is implemented as insert-or-delete of the row for that (`habit_id`, `date`); an absent row means not done. The `done` column exists to allow an explicit not-done marker in future without a migration, but the app currently treats absence as not-done.
 
 ### Day key and dates
 
@@ -182,7 +182,7 @@ Dev dependencies:
 - `flutter_lints`, `custom_lint`, `riverpod_lint` (analysis).
 - `flutter_test` (bundled).
 
-No dependency is added without approval per `docs/rules.md`.
+Dependencies are pinned to exact versions in `pubspec.yaml`.
 
 ## Environment variables
 
