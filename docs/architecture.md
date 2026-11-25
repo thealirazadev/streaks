@@ -2,19 +2,19 @@
 
 ## App flow
 
-1. **Launch.** `main.dart` initializes the local timezone database, opens the Drift database, initializes the notification plugin, and mounts the root `ProviderScope` and `StreaksApp` widget.
+1. **Launch.** `main.dart` mounts the root `ProviderScope` and `StreaksApp` widget. The Drift database opens lazily through `appDatabaseProvider` on first use.
 2. **Home (habit list).** The app opens on the habit list. Active (non-archived) habits are read from the database via a Riverpod provider that watches a Drift stream. Each row shows the habit name, color, today's completion toggle, and the current streak.
 3. **Toggle today.** Tapping the toggle inserts or deletes a `HabitEntry` for that habit and today's local date. The stream emits, providers recompute streaks, and the UI updates.
-4. **Create or edit a habit.** A form screen collects name, color, weekly schedule, and optional reminder. Saving writes to the database; if a reminder is enabled the notification is scheduled, otherwise any existing one is cancelled.
+4. **Create or edit a habit.** A form screen collects name, color, and weekly schedule. Saving writes to the database.
 5. **Habit detail.** Selecting a habit opens a detail screen with current and longest streaks and a calendar heatmap. Tapping any day in the heatmap toggles that day's completion.
-6. **Reminders.** On save and on app launch, enabled reminders are (re)scheduled. Notification permission is requested lazily when the user first enables a reminder.
-7. **Date rollover.** When the app resumes or the date changes, the "today" reference is recomputed so toggles and streaks reference the correct local calendar date.
+6. **Reminders (not built).** The detail screen shows that reminders are not available yet. The habit table already has `reminder_enabled` and `reminder_minute_of_day` columns reserved for them; nothing reads or writes them today.
+7. **Date rollover.** "Today" is read from the clock at the moment of each toggle and each time a screen or streak provider rebuilds; it is not cached. A write always lands on the current local date. There is no midnight timer, so a screen left open across midnight shows the previous day's state until it next rebuilds (any toggle or navigation does that).
 
-## Folder and file tree (proposed)
+## Folder and file tree
 
 ```
 lib/
-  main.dart                          App entry: init timezone, DB, notifications, runApp
+  main.dart                          App entry: ProviderScope + runApp
   app/
     streaks_app.dart                 Root MaterialApp, theme, home
     theme/
@@ -23,9 +23,9 @@ lib/
       app_spacing.dart               Spacing and radius constants
   core/
     result.dart                      Result/failure type for data operations
-    failures.dart                    App failure definitions (DbFailure, NotificationFailure)
+    failures.dart                    App failure definitions (DbFailure)
     logger.dart                      Thin logging wrapper used app-wide
-    date_utils.dart                  Local-date helpers (dayKey, todayLocal, dateRange)
+    date_utils.dart                  Local-date helpers (dayKey, todayLocal, nextDay, previousDay, dateRange)
     constants.dart                   App-wide constants (max name length, etc.)
   data/
     database/
@@ -66,21 +66,19 @@ lib/
       presentation/
         streak_badge.dart           Current/longest streak display
         heatmap_calendar.dart       Calendar heatmap widget
-    reminders/
-      application/
-        notification_service.dart   Wraps flutter_local_notifications
-        reminder_controller.dart    Enable/disable/reschedule reminders
-      presentation/
-        reminder_tile.dart          Time picker + enable toggle
 test/
+  core/
+    date_utils_test.dart             Day keys and calendar-day stepping, including DST changes
   data/
     streak_calculator_test.dart      Unit tests for streak logic
-    habit_dao_test.dart              DAO tests on in-memory database
+    habit_dao_test.dart              Habit DAO tests on an in-memory database
+    habit_entry_dao_test.dart        Entry DAO tests (toggle, cascade, bulk insert)
   features/
     habit_list_screen_test.dart      Widget test for the list and empty state
-    habit_form_screen_test.dart      Widget test for validation
+    habit_detail_screen_test.dart    Widget test for the detail screen and heatmap toggle
+    habit_validation_test.dart       Unit tests for habit name validation
 docs/
-  ... planning documentation ...
+  architecture.md, design.md, testing.md, decisions.md
 ```
 
 The presentation layer holds widgets and screens, the application layer holds Riverpod providers and controllers, and the domain layer holds plain Dart models and pure logic. Data access is isolated in `data/`.
@@ -90,7 +88,6 @@ The presentation layer holds widgets and screens, the application layer holds Ri
 - **Flutter / Dart, Material 3.** Single codebase for Android and iOS with a mature widget set and first-class Material 3 support.
 - **Drift (SQLite) for persistence.** Chosen over Hive. See the decision below.
 - **Riverpod for state management.** Compile-safe providers, easy testing with overrides, and natural integration with Drift streams (`Stream` -> `StreamProvider`). Streak values are derived state, which Riverpod models cleanly as computed providers.
-- **flutter_local_notifications + timezone.** The de facto plugin for scheduled local notifications; the timezone package is required for correct daily scheduling across DST.
 - **flutter_lints.** Enforces Effective Dart style with the standard lint set.
 - **flutter_test + widget tests.** Built-in testing for pure logic (streak calculator), DAOs (in-memory database), and screens (widget tests).
 
@@ -114,8 +111,8 @@ Hive is a fast key-value store but would push relational modeling, range queries
 | `name` | text | Required, trimmed, 1..80 chars |
 | `color` | int | ARGB value from the app palette |
 | `schedule_mask` | int | Bitmask of weekdays (bit 0 = Monday .. bit 6 = Sunday); `0x7F` = every day |
-| `reminder_enabled` | bool | Whether a daily reminder is scheduled |
-| `reminder_minute_of_day` | int nullable | Minutes since local midnight for the reminder; null when disabled |
+| `reminder_enabled` | bool | Reserved for reminders (not built yet); always false today |
+| `reminder_minute_of_day` | int nullable | Reserved for reminders (not built yet); always null today |
 | `archived` | bool | Hidden from the active list when true; entries retained |
 | `created_at` | datetime | Creation timestamp (UTC stored) |
 
@@ -136,7 +133,7 @@ Constraints:
 
 ### Day key and dates
 
-Dates are stored as an integer day key (`yyyymmdd`) computed from the local calendar date. This avoids timezone ambiguity from storing timestamps and makes range and equality queries trivial. `core/date_utils.dart` provides `dayKey(DateTime)`, `todayLocal()`, and helpers to iterate a date range. The habit `created_at` is stored as a UTC timestamp for auditability; day keys are always local.
+Dates are stored as an integer day key (`yyyymmdd`) computed from the local calendar date. This avoids timezone ambiguity from storing timestamps and makes range and equality queries trivial. `core/date_utils.dart` provides `dayKey(DateTime)`, `todayLocal()`, and helpers to step and iterate days. Stepping always builds the neighbouring calendar date (`DateTime(y, m, d + 1)`) instead of adding a 24 hour `Duration`, because a local day is 23 or 25 hours long across a daylight-saving change and a fixed-length step would skip or repeat a day. The habit `created_at` is stored as a UTC timestamp for auditability; day keys are always local.
 
 ## Streak computation
 
@@ -165,16 +162,13 @@ The calculator is pure (no I/O, no DateTime.now inside), so `todayKey` is inject
 - **Reactive reads:** DAOs expose Drift streams; repositories wrap them; Riverpod `StreamProvider`s expose them to the UI.
 - **Derived state:** streak results are computed in Riverpod providers that depend on the entries provider and the habit's schedule; nothing derived is persisted.
 - **Ephemeral UI state:** form fields and pickers use Riverpod controllers (`Notifier`/`AsyncNotifier`) scoped to the screen.
-- **Reminders:** the notification service holds no durable state; reminder settings live on the Habit row and are rescheduled from the database on launch.
 
 ## External dependencies
 
-Pinned exact versions live in `pubspec.yaml` and `pubspec.lock` (committed). Planned direct dependencies:
+Exact versions are pinned in `pubspec.yaml`. `pubspec.lock` is not committed, so `flutter pub get` resolves transitive versions on each machine. Direct dependencies:
 
 - `drift`, `sqlite3_flutter_libs`, `path_provider`, `path` (database and native SQLite).
 - `flutter_riverpod`, `riverpod_annotation` (state).
-- `flutter_local_notifications`, `timezone`, `flutter_timezone` (reminders).
-- `intl` (date formatting).
 
 Dev dependencies:
 

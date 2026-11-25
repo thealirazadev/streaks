@@ -5,14 +5,13 @@
 streaks uses a mix of automated tests and manual QA. Automated tests focus where they give the most value for the least fragility; the rest is verified manually on a device or emulator.
 
 ### Automated: `flutter_test`
-- **Unit tests (highest priority).** The streak calculator (`features/streaks/domain/streak_calculator.dart`) is pure and must be covered thoroughly: empty history, single day, consecutive days, gaps, schedule-aware skipping (non-scheduled days do not break streaks), current vs longest divergence, today incomplete, and date-rollover via injected `todayKey`.
+- **Unit tests (highest priority).** The streak calculator (`features/streaks/domain/streak_calculator.dart`) is pure and must be covered thoroughly: empty history, single day, consecutive days, gaps, schedule-aware skipping (non-scheduled days do not break streaks), current vs longest divergence, today incomplete, date-rollover via injected `todayKey`, and walks across daylight-saving changes. `core/date_utils.dart` steps by calendar day (`nextDay`, `previousDay`), never by a 24 hour `Duration`, and `test/core/date_utils_test.dart` checks that a year of steps yields every day once.
 - **DAO / database tests.** Run DAOs against an **in-memory** Drift database (`NativeDatabase.memory()`), no device needed. Cover insert habit, insert/delete entry (toggle idempotency, unique (habit_id, date)), archive/unarchive, cascade delete of entries with a habit, and bulk entry insert. The schema is still at version 1, so there is no migration test yet; add one with the first schema change.
 - **Widget tests.** Cover the habit list (renders tiles, shows the empty state when there are no habits, toggles today), and the habit form (name validation: empty, whitespace, too long; save enabled/disabled). Use `ProviderScope` overrides to inject a test database or fake repository so widget tests do not touch a real device database.
 
 ### Manual QA (on device/emulator)
 Reserved for things that are impractical or brittle to automate:
-- Local notification scheduling and delivery, and the permission-denied flow.
-- Real date rollover across midnight and timezone/DST behavior on a physical device.
+- Real date rollover across midnight on a physical device.
 - Visual review of light/dark themes, text scaling, empty and loading states, and long habit names.
 - App icon, splash, and release build behavior.
 
@@ -60,10 +59,13 @@ using the Flutter version pinned in `pubspec.yaml` (`environment.flutter`):
 2. `dart run build_runner build --delete-conflicting-outputs`
 3. `flutter analyze`
 4. `flutter test`
+5. `flutter test test/core/date_utils_test.dart test/data/streak_calculator_test.dart` again with
+   `TZ=America/New_York`, so the day-stepping and streak tests run in a zone with daylight-saving
+   changes (the runner's default zone is UTC, which has none)
 
 CI does not run the `dart format` check or any platform build; run those locally. The
 `android/` and `ios/` platform folders are not committed, so the build commands above need them
-generated first (for example with `flutter create .`).
+generated first (see the Install section of the README).
 
 ## Definition of "passing"
 
