@@ -69,8 +69,8 @@ class HabitFormState {
 }
 
 /// Controls the create-habit form: field state, validation, and
-/// submission. Widgets never call the repository directly (see
-/// `docs/rules.md`); they call this controller.
+/// submission. Widgets never call the repository directly, which keeps
+/// form logic testable without a widget tree; they call this controller.
 class HabitFormController extends Notifier<HabitFormState> {
   @override
   HabitFormState build() => const HabitFormState();

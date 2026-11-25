@@ -21,8 +21,8 @@ class HabitNameInvalid extends HabitNameValidation {
 }
 
 /// Validates a raw habit name input: trims whitespace, rejects empty or
-/// whitespace-only names, and enforces the 1..80 length rule from
-/// `docs/rules.md`.
+/// whitespace-only names, and enforces the 1..80 length rule that the
+/// `Habits.name` column also applies.
 HabitNameValidation validateHabitName(String input) {
   final trimmed = input.trim();
   if (trimmed.length < habitNameMinLength) {

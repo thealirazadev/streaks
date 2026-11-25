@@ -34,7 +34,7 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-The `build_runner` step generates Drift database code and Riverpod providers. Re-run it after any change to a Drift table or a code-generated provider.
+The `build_runner` step generates the Drift database code, which is not committed. Re-run it after any change to a Drift table or DAO.
 
 ## Run
 
@@ -73,7 +73,7 @@ lib/
     habits/              Habit list, create/edit, habit detail
     streaks/             Streak computation and streak display widgets
     reminders/           Notification scheduling and permission handling
-docs/                    Planning and handoff documentation
+docs/                    Architecture, design, testing, and design decisions
 test/                    Unit and widget tests
 ```
 
@@ -81,7 +81,10 @@ See `docs/architecture.md` for the full folder tree and rationale.
 
 ## Documentation
 
-Planning and handoff docs live in `docs/`: `PRD.md`, `architecture.md`, `rules.md`, `design.md`, `phases.md`, `testing.md`, `memory.md`, and `launch-checklist.md`.
+- `docs/architecture.md`: folder layout, data model, and stack rationale
+- `docs/design.md`: screens, theme, and accessibility targets
+- `docs/testing.md`: test strategy, commands, and what CI runs
+- `docs/decisions.md`: design decisions and the edge cases behind them
 
 ## License
 
