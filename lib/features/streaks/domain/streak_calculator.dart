@@ -47,7 +47,7 @@ int _currentStreak(Set<int> completed, Schedule schedule, int todayKey) {
       }
       // key == todayKey and incomplete: not counted, but does not break.
     }
-    cursor = cursor.subtract(const Duration(days: 1));
+    cursor = previousDay(cursor);
   }
   return streak;
 }
@@ -73,7 +73,7 @@ int _longestStreak(Set<int> completed, Schedule schedule, int todayKey) {
         running = 0;
       }
     }
-    cursor = cursor.add(const Duration(days: 1));
+    cursor = nextDay(cursor);
   }
   return longest;
 }

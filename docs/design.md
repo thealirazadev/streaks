@@ -114,13 +114,13 @@ Every interactive component must define all applicable states. Use Material 3 st
 - **Loading:** on first load, show shimmer/placeholder tiles (see Loading) not a spinner over content.
 - **Error:** if the list fails to load, replace the list with the error state view (see below).
 
-### Text fields (habit name, reminder time)
+### Text fields (habit name; reminder time once reminders are built)
 - **Default:** outlined input, label, helper text.
 - **Focused:** primary outline, floating label.
 - **Disabled:** dimmed, non-editable (reminder time when reminder is off).
 - **Error:** `error` outline, error text below (for example, "Name is required" or "Name is too long").
 
-### Toggles and switches (reminder enable, schedule days)
+### Toggles and switches (schedule days; reminder enable once reminders are built)
 - **Default / selected / unselected** per Material 3 Switch and FilterChip.
 - **Disabled:** when notification permission is denied, the reminder switch is disabled with helper text explaining why.
 

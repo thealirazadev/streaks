@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:streaks/app/theme/app_spacing.dart';
 import 'package:streaks/core/date_utils.dart' as date_utils;
 import 'package:streaks/data/repositories/habit_repository_provider.dart';
+import 'package:streaks/features/habits/application/habit_list_provider.dart';
 import 'package:streaks/features/habits/domain/habit.dart';
 import 'package:streaks/features/habits/presentation/habit_form_screen.dart';
 import 'package:streaks/features/streaks/application/streak_provider.dart';
@@ -24,10 +25,26 @@ class HabitDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
+  /// The stored version of the habit this screen was opened with, taken from
+  /// the active habit list, so edits saved from the form show up here and
+  /// are what a second edit or an undo starts from. Falls back to
+  /// [HabitDetailScreen.habit] while the list loads or when the habit is no
+  /// longer active.
+  Habit _latest(AsyncValue<List<Habit>> habits) {
+    final opened = widget.habit;
+    return habits.maybeWhen(
+      data: (list) =>
+          list.firstWhere((h) => h.id == opened.id, orElse: () => opened),
+      orElse: () => opened,
+    );
+  }
+
+  Habit get _currentHabit => _latest(ref.read(habitListProvider));
+
   void _openEditForm(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => HabitFormScreen(habit: widget.habit),
+        builder: (_) => HabitFormScreen(habit: _currentHabit),
       ),
     );
   }
@@ -47,7 +64,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final habit = widget.habit;
+    final habit = _currentHabit;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -72,7 +89,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   }
 
   Future<void> _delete(BuildContext context) async {
-    final habit = widget.habit;
+    final habit = _currentHabit;
     final repository = ref.read(habitRepositoryProvider);
     // Snapshot the history before deleting so "Undo" can recreate it.
     final completed = await repository.watchCompletedDayKeys(habit.id).first;
@@ -124,7 +141,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final habit = widget.habit;
+    final habit = _latest(ref.watch(habitListProvider));
     final completedAsync = ref.watch(completedDayKeysProvider(habit.id));
     final streakAsync = ref.watch(streakProvider(habit));
     final streak = streakAsync.maybeWhen(

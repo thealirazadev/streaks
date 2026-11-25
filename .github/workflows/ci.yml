@@ -28,3 +28,8 @@ jobs:
 
       - name: Tests
         run: flutter test
+
+      - name: Date tests in a daylight-saving zone
+        env:
+          TZ: America/New_York
+        run: flutter test test/core/date_utils_test.dart test/data/streak_calculator_test.dart
