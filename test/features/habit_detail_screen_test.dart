@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,6 +90,32 @@ void main() {
       find.text('No completions yet. Mark today done to begin.'),
       findsOneWidget,
     );
+    await unmount(tester);
+  });
+
+  testWidgets('shows edits saved to the habit after the screen opened', (
+    tester,
+  ) async {
+    final database = openDatabase();
+    final habit = await insertHabit(database);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appDatabaseProvider.overrideWithValue(database)],
+        child: MaterialApp(home: HabitDetailScreen(habit: habit)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Read'), findsNWidgets(2)); // app bar and heading
+
+    // What the edit form does on save: update the stored row.
+    await (database.update(database.habits)
+          ..where((t) => t.id.equals(habit.id)))
+        .write(const HabitsCompanion(name: Value('Read daily')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Read'), findsNothing);
+    expect(find.text('Read daily'), findsNWidgets(2));
     await unmount(tester);
   });
 }
