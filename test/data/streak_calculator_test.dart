@@ -142,5 +142,60 @@ void main() {
         reason: 'the grace day has itself passed unmarked',
       );
     });
+
+    // The cases below cross the 2026 daylight-saving changes in zones such
+    // as America/New_York (spring forward on Sunday 8 March, fall back on
+    // Sunday 1 November). Stepping by a 24 hour Duration from local
+    // midnight skips 8 March walking back and visits 1 November twice
+    // walking forward. CI also runs this file under TZ=America/New_York.
+    test('walking back over a spring-forward day does not skip it', () {
+      final result = computeStreaks(
+        completedDayKeys: {20260307, 20260309},
+        scheduleMask: Schedule.everyDay.mask,
+        todayKey: 20260309,
+      );
+      expect(result, const StreakResult(current: 1, longest: 1));
+    });
+
+    test('walking forward over a fall-back day counts it once', () {
+      final result = computeStreaks(
+        completedDayKeys: {20261031, 20261101},
+        scheduleMask: Schedule.everyDay.mask,
+        todayKey: 20261102,
+      );
+      expect(result, const StreakResult(current: 2, longest: 2));
+    });
+
+    test('a streak spanning both changes counts every day exactly once', () {
+      final completed = <int>{
+        for (var day = 1; day <= 31; day++) 20260300 + day,
+      };
+      final result = computeStreaks(
+        completedDayKeys: completed,
+        scheduleMask: Schedule.everyDay.mask,
+        todayKey: 20260331,
+      );
+      expect(result, const StreakResult(current: 31, longest: 31));
+
+      final autumn = <int>{
+        for (var day = 1; day <= 31; day++) 20261000 + day,
+        for (var day = 1; day <= 30; day++) 20261100 + day,
+      };
+      final autumnResult = computeStreaks(
+        completedDayKeys: autumn,
+        scheduleMask: Schedule.everyDay.mask,
+        todayKey: 20261130,
+      );
+      expect(autumnResult, const StreakResult(current: 61, longest: 61));
+    });
+
+    test('streaks cross month and year boundaries', () {
+      final result = computeStreaks(
+        completedDayKeys: {20251230, 20251231, 20260101, 20260102},
+        scheduleMask: Schedule.everyDay.mask,
+        todayKey: 20260102,
+      );
+      expect(result, const StreakResult(current: 4, longest: 4));
+    });
   });
 }
