@@ -9,8 +9,8 @@ import 'package:streaks/features/habits/domain/habit.dart';
 /// Fill follows `docs/design.md`: a not-scheduled or no-data day uses a
 /// low-opacity outline, a scheduled-but-not-done day uses a neutral
 /// surface, and a done day uses the habit color. Today's cell always gets
-/// a ring. Tapping a cell invokes [onDayTap] when set (a later phase wires
-/// this to toggle completion); future days are rendered as blank space and
+/// a ring. Tapping a cell invokes [onDayTap] when set (the detail screen
+/// uses it to toggle completion); future days are rendered as blank space and
 /// are never tappable.
 ///
 /// Only [monthsBack] month sections are built (not one item per day), so

@@ -134,7 +134,7 @@ Each empty state has an icon, a short title, one line of guidance, and (where re
 - **No habits yet (home):** centered illustration/icon, title "No habits yet", body "Create your first habit to start a streak.", primary FilledButton "Add habit". This is `empty_habits_view.dart`.
 - **Habit detail, no history:** heatmap renders all cells empty; a line reads "No completions yet. Mark today done to begin."
 - **Archived list empty (if surfaced):** "No archived habits."
-- Empty states must be reachable and correct before any feature is done (see phase verification).
+- Empty states must be reachable and correct before any feature is done.
 
 ## Loading states
 

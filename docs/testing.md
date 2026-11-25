@@ -6,7 +6,7 @@ streaks uses a mix of automated tests and manual QA. Automated tests focus where
 
 ### Automated: `flutter_test`
 - **Unit tests (highest priority).** The streak calculator (`features/streaks/domain/streak_calculator.dart`) is pure and must be covered thoroughly: empty history, single day, consecutive days, gaps, schedule-aware skipping (non-scheduled days do not break streaks), current vs longest divergence, today incomplete, and date-rollover via injected `todayKey`.
-- **DAO / database tests.** Run DAOs against an **in-memory** Drift database (`NativeDatabase.memory()`), no device needed. Cover insert habit, insert/delete entry (toggle idempotency, unique (habit_id, date)), archive/unarchive, cascade delete of entries with a habit, and a migration test from the prior schema version to the current one.
+- **DAO / database tests.** Run DAOs against an **in-memory** Drift database (`NativeDatabase.memory()`), no device needed. Cover insert habit, insert/delete entry (toggle idempotency, unique (habit_id, date)), archive/unarchive, cascade delete of entries with a habit, and bulk entry insert. The schema is still at version 1, so there is no migration test yet; add one with the first schema change.
 - **Widget tests.** Cover the habit list (renders tiles, shows the empty state when there are no habits, toggles today), and the habit form (name validation: empty, whitespace, too long; save enabled/disabled). Use `ProviderScope` overrides to inject a test database or fake repository so widget tests do not touch a real device database.
 
 ### Manual QA (on device/emulator)
@@ -16,7 +16,7 @@ Reserved for things that are impractical or brittle to automate:
 - Visual review of light/dark themes, text scaling, empty and loading states, and long habit names.
 - App icon, splash, and release build behavior.
 
-Manual steps are enumerated per phase in `docs/phases.md` and in the phase verification checklist there.
+Unhappy paths to walk through by hand: empty and whitespace-only names, a 80+ character name, deleting a habit and pressing Undo, archiving and unarchiving, and toggling days on the heatmap including today.
 
 ## Exact commands
 
@@ -26,7 +26,7 @@ Run from the repository root.
 # Install dependencies
 flutter pub get
 
-# Generate Drift and Riverpod code (after schema/provider changes)
+# Generate Drift code (after any table or DAO change)
 dart run build_runner build --delete-conflicting-outputs
 
 # Static analysis: must report zero issues
@@ -51,6 +51,20 @@ flutter build appbundle --release
 flutter build ios --release --no-codesign
 ```
 
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request against `main`,
+using the Flutter version pinned in `pubspec.yaml` (`environment.flutter`):
+
+1. `flutter pub get`
+2. `dart run build_runner build --delete-conflicting-outputs`
+3. `flutter analyze`
+4. `flutter test`
+
+CI does not run the `dart format` check or any platform build; run those locally. The
+`android/` and `ios/` platform folders are not committed, so the build commands above need them
+generated first (for example with `flutter create .`).
+
 ## Definition of "passing"
 
 Before any feature is considered done:
@@ -59,9 +73,9 @@ Before any feature is considered done:
 2. `dart format --output=none --set-exit-if-changed .` passes (code is formatted).
 3. `flutter test` passes with **all** tests green.
 4. The relevant debug build succeeds for at least one target platform.
-5. The manual checklist items for the feature's phase have been walked through.
+5. The relevant manual checks above have been walked through.
 
-Build and tests must pass before the feature's commit is made. A red build or failing test blocks the commit. If a test is legitimately outdated by a scoped change, update it in the same feature commit with a clear reason.
+If a test is legitimately outdated by a change, update it in the same commit with a clear reason.
 
 ## Coverage expectations
 
